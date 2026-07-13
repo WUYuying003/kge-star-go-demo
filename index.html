@@ -1,0 +1,103 @@
+<!doctype html>
+<html lang="zh-CN">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>K歌造星大富翁 Demo</title>
+    <link rel="icon" href="data:," />
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="app-shell">
+      <section class="phone-frame" aria-label="K歌造星大富翁小游戏">
+        <div class="coin-layer" id="coinLayer" aria-hidden="true"></div>
+        <header class="topbar">
+          <div class="profile">
+            <div class="avatar">K</div>
+            <div>
+              <div class="nickname">玩家昵称</div>
+              <div class="level">Lv.5 造星老板</div>
+            </div>
+          </div>
+          <div class="wallet">
+            <div class="pill strong"><span>金币</span><b id="coinCount">0</b></div>
+            <div class="pill"><span>骰子</span><b id="diceCount">0</b></div>
+            <div class="pill"><span>护盾</span><b id="shieldCount">0</b></div>
+          </div>
+        </header>
+
+        <section class="goal-card">
+          <div>
+            <div class="label">当前地图</div>
+            <h1 id="mapName">海选夜市站</h1>
+          </div>
+          <div class="goal-copy">
+            <span id="mapGoal">签约并培养全部艺人</span>
+            <div class="progress-track"><div id="mapProgress" class="progress-fill"></div></div>
+            <b id="mapProgressText">0/4 满级</b>
+          </div>
+        </section>
+
+        <section class="asset-strip" aria-label="待签约艺人" id="assetStrip"></section>
+
+        <section class="shortcut-row" aria-label="日常入口">
+          <button class="shortcut-btn" id="dailyTaskBtn">每日任务 <b>领骰子</b></button>
+          <button class="shortcut-btn" id="galleryBtn">艺人图鉴 <b>集卡领骰</b></button>
+        </section>
+
+        <section class="board-wrap">
+          <div class="board" id="board" aria-label="巡演地图">
+            <div class="stage">
+              <div class="stage-title">造星工作室</div>
+              <div class="stage-income">通告分成 <b id="tourIncome">0</b>/圈</div>
+              <div class="stage-room">
+                <span class="light light-left"></span>
+                <span class="mic"></span>
+                <span class="speaker"></span>
+                <span class="coin-machine"></span>
+                <span class="speaker right"></span>
+              </div>
+              <button class="small-action" id="collectOfflineBtn">收通告收益</button>
+            </div>
+          </div>
+        </section>
+
+        <section class="event-feed">
+          <div class="feed-title">玩法提示</div>
+          <p id="feedText">点击掷骰子开始造星巡演。路过已签约艺人会自动收通告分成，落到特殊格会触发事件。</p>
+        </section>
+
+        <footer class="control-panel">
+          <button class="secondary-btn" id="adDiceBtn">广告补骰</button>
+          <button class="roll-btn" id="rollBtn">
+            <span class="go-copy">GO</span>
+            <span class="roll-dice" id="rollDice" aria-hidden="true">
+              <i></i><i></i><i></i><i></i><i></i><i></i>
+            </span>
+            <small>掷骰子</small>
+            <b class="roll-result" id="diceFace"></b>
+          </button>
+          <div class="dice-stock" aria-label="剩余骰子">
+            <span class="dice-stock-icon"></span>
+            <b id="bottomDiceCount">0</b><small>/30</small>
+          </div>
+          <button class="secondary-btn" id="adCoinBtn">广告翻倍</button>
+        </footer>
+      </section>
+    </main>
+
+    <div class="modal-backdrop" id="modalBackdrop" hidden>
+      <section class="modal" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle">
+        <button class="modal-close" id="modalClose" aria-label="关闭弹窗">x</button>
+        <div class="modal-kicker" id="modalKicker">特殊事件</div>
+        <h2 id="modalTitle">热搜机会</h2>
+        <div id="modalBody" class="modal-body">你的作品被推荐，获得金币奖励。</div>
+        <div class="modal-reward" id="modalReward">+1000 金币</div>
+        <div class="choice-grid" id="choiceGrid"></div>
+        <div class="modal-actions" id="modalActions"></div>
+      </section>
+    </div>
+
+    <script src="./app.js"></script>
+  </body>
+</html>

@@ -789,6 +789,12 @@ function openBankHeist() {
     dice: { label: "骰子", reward: "dice", icon: "骰" },
     fan: { label: "粉丝", reward: "fan", icon: "粉" },
   };
+  const prizePreview = {
+    gold: `最高 ${money(Math.round(26888 * currentMap().scale))} 金币`,
+    cash: `最高 ${money(Math.round(16888 * currentMap().scale))} 金币`,
+    fan: `最高 ${money(Math.round(12888 * currentMap().scale))} 金币`,
+    dice: "最高 16 骰子",
+  };
   const symbols = shuffle(["gold", "gold", "gold", "cash", "cash", "cash", "dice", "dice", "dice", "fan", "fan", "fan"]);
   const counts = {};
   let finished = false;
@@ -800,11 +806,19 @@ function openBankHeist() {
     reward: "大额收入事件",
     wide: true,
     customHtml: `
-      <div class="heist-copy">翻开保险柜，最先凑齐3个相同图标就结算奖励。金麦奖励最高，骰子也很香。</div>
+      <div class="heist-copy">翻开保险柜，最先凑齐3个相同图标就结算奖励。</div>
+      <div class="heist-prize-grid" aria-label="集齐三张后的最高奖励">
+        ${["gold", "cash", "fan", "dice"].map((symbol) => `
+          <div class="heist-prize ${symbol}">
+            <span>${symbolInfo[symbol].icon}</span>
+            <div><b>3个${symbolInfo[symbol].label}</b><small>${prizePreview[symbol]}</small></div>
+          </div>
+        `).join("")}
+      </div>
       <div class="heist-board">
         ${symbols.map((symbol, index) => `<button class="heist-card" data-index="${index}" data-symbol="${symbol}">?</button>`).join("")}
       </div>
-      <div class="heist-status" id="heistStatus">金麦最大，骰子也很香。</div>
+      <div class="heist-status" id="heistStatus">金麦大奖最高，先凑齐任意一组就能领奖。</div>
     `,
     actions: [{ label: "先不抢了", className: "plain-action", onClick: closeModal }],
   });

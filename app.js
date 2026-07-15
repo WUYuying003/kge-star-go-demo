@@ -8,24 +8,22 @@ const tileCoords = [
 const tileTypes = [
   { type: "start", name: "起点" },
   { type: "coin", name: "金币" },
-  { type: "artist", name: "艺人", artistIndex: 0 },
   { type: "chance", name: "热搜" },
   { type: "gift", name: "礼物雨" },
   { type: "bank", name: "金库" },
   { type: "coin", name: "金币" },
-  { type: "artist", name: "艺人", artistIndex: 1 },
   { type: "shield", name: "守护" },
-  { type: "raid", name: "踢馆" },
-  { type: "task", name: "任务" },
+  { type: "dice", name: "骰子" },
   { type: "coin", name: "金币" },
-  { type: "artist", name: "艺人", artistIndex: 2 },
   { type: "chance", name: "热搜" },
   { type: "gift", name: "礼物雨" },
   { type: "bank", name: "金库" },
   { type: "risk", name: "小事故" },
-  { type: "artist", name: "艺人", artistIndex: 3 },
-  { type: "gallery", name: "图鉴" },
+  { type: "support", name: "应援站" },
+  { type: "coin", name: "金币" },
+  { type: "shield", name: "守护" },
   { type: "chance", name: "热搜" },
+  { type: "dice", name: "骰子" },
 ];
 
 const levelNames = ["未签约", "练习生", "出道", "顶流"];
@@ -65,7 +63,7 @@ const state = {
   moving: false,
   lastCoinReward: 0,
   tasks: {
-    progress: { roll: 0, bank: 0, raid: 0, train: 0, gallery: 0, collect: 0 },
+    progress: { roll: 0, bank: 0, support: 0, train: 0, gallery: 0, collect: 0 },
     claimed: {},
   },
   galleryClaims: {},
@@ -74,7 +72,7 @@ const state = {
 const taskDefs = [
   { key: "roll", label: "完成5次掷骰", need: 5, reward: 6 },
   { key: "bank", label: "金库抢麦1次", need: 1, reward: 8 },
-  { key: "raid", label: "踢馆破坏1次", need: 1, reward: 8 },
+  { key: "support", label: "经过应援站1次", need: 1, reward: 5 },
   { key: "train", label: "培养艺人1次", need: 1, reward: 5 },
   { key: "gallery", label: "领取1次图鉴奖励", need: 1, reward: 4 },
   { key: "collect", label: "收通告收益1次", need: 1, reward: 4 },
@@ -82,7 +80,6 @@ const taskDefs = [
 
 const els = {
   board: document.querySelector("#board"),
-  assetStrip: document.querySelector("#assetStrip"),
   coinCount: document.querySelector("#coinCount"),
   coinLayer: document.querySelector("#coinLayer"),
   diceCount: document.querySelector("#diceCount"),
@@ -100,6 +97,7 @@ const els = {
   adDiceBtn: document.querySelector("#adDiceBtn"),
   adCoinBtn: document.querySelector("#adCoinBtn"),
   collectOfflineBtn: document.querySelector("#collectOfflineBtn"),
+  managerBtn: document.querySelector("#managerBtn"),
   dailyTaskBtn: document.querySelector("#dailyTaskBtn"),
   galleryBtn: document.querySelector("#galleryBtn"),
   modal: document.querySelector("#modal"),
@@ -150,6 +148,10 @@ function totalTourIncome() {
   }, 0);
 }
 
+function startIncome() {
+  return Math.round(1200 * currentMap().scale + totalTourIncome());
+}
+
 function upgradeCost(index) {
   const level = state.artists[index];
   const base = currentMap().artists[index].cost;
@@ -189,32 +191,11 @@ function renderBoard() {
     icon.className = "tile-icon";
     const name = document.createElement("span");
     name.className = "tile-name";
-    name.textContent = tile.type === "artist"
-      ? currentMap().artists[tile.artistIndex].name
-      : tile.name;
+    name.textContent = tile.name;
     node.append(icon, name);
 
     node.addEventListener("click", () => explainTile(index));
     els.board.appendChild(node);
-  });
-}
-
-function renderAssets() {
-  els.assetStrip.innerHTML = "";
-  currentMap().artists.forEach((artist, index) => {
-    const level = state.artists[index];
-    const card = document.createElement("button");
-    card.type = "button";
-    card.className = `asset-card artist-card ${level >= 3 ? "max" : ""}`;
-    const status = level <= 0 ? "待签约" : level >= 3 ? "满级" : `培养需 ${money(upgradeCost(index))}`;
-    card.innerHTML = `
-      <div class="asset-icon portrait">${artist.name.slice(0, 1)}</div>
-      <div class="asset-name">${artist.name}</div>
-      <div class="asset-level">${levelNames[level]}</div>
-      <div class="asset-income">${level <= 0 ? status : `+${money(artistIncome(index))}/次`}</div>
-    `;
-    card.addEventListener("click", () => openArtistModal(index));
-    els.assetStrip.appendChild(card);
   });
 }
 
@@ -226,17 +207,16 @@ function render() {
   els.mapName.textContent = currentMap().name;
   els.mapGoal.textContent = allArtistsMaxed()
     ? `全员顶流，可解锁${currentMap().next}`
-    : "签约并培养全部艺人到顶流";
+    : "去经纪公司签约并培养艺人";
   const count = completedCount();
   els.mapProgress.style.width = `${(count / 4) * 100}%`;
   els.mapProgressText.textContent = `${count}/4 顶流`;
-  els.tourIncome.textContent = money(totalTourIncome());
+  els.tourIncome.textContent = money(startIncome());
   els.rollBtn.disabled = state.moving;
   els.adCoinBtn.disabled = state.lastCoinReward <= 0;
   document.querySelectorAll(".tile").forEach((node) => {
     node.classList.toggle("active", Number(node.dataset.index) === state.position);
   });
-  renderAssets();
 }
 
 function setModalActions(actions = []) {
@@ -366,21 +346,55 @@ function explainTile(index) {
   const explainMap = {
     start: "每次经过起点都会获得造星补贴。",
     coin: "稳定金币格，直接拿通告小钱。",
-    artist: "签约艺人。签约后每次路过都能收通告分成，等级越高收得越多。",
     chance: "热搜机会卡，可能上热门、捡补贴、也可能遇到小事故。",
     gift: "礼物雨，粉丝打赏到账。",
     bank: "进入金库抢麦，翻卡凑齐3个相同图标，属于大额收入事件。",
-    raid: "去好友工作室踢馆，选择一个建筑破坏，成功拿大额金币。",
-    shield: "获得粉丝守护，可抵挡小事故或好友破坏。",
-    task: "打开每日任务，完成后领骰子。",
-    gallery: "打开艺人图鉴，签约/满级都能领骰子。",
+    shield: "获得粉丝守护，可抵挡一次小事故。",
+    dice: "获得额外骰子，马上多走几步。",
+    support: "后援会加码应援，获得金币和骰子。",
     risk: "小事故格，付钱概率较低，也可以看广告免除。",
   };
   showModal({
     kicker: "格子说明",
-    title: tile.type === "artist" ? currentMap().artists[tile.artistIndex].name : tile.name,
+    title: tile.name,
     body: explainMap[tile.type],
     actions: [{ label: "知道了", onClick: closeModal }],
+  });
+}
+
+function openManagerModal() {
+  const cards = currentMap().artists.map((artist, index) => {
+    const level = state.artists[index];
+    const status = level <= 0
+      ? `待签约 · ${money(upgradeCost(index))} 金币`
+      : level >= 3
+        ? `顶流 · 每圈 +${money(artistIncome(index))}`
+        : `${levelNames[level]} · 培养需 ${money(upgradeCost(index))}`;
+    return `
+      <button class="manager-card ${level >= 3 ? "max" : ""}" data-index="${index}">
+        <span class="manager-portrait">${level > 0 ? artist.name.slice(0, 1) : "?"}</span>
+        <b>${artist.name}</b>
+        <small>${artist.trait}</small>
+        <em>${status}</em>
+      </button>
+    `;
+  }).join("");
+
+  showModal({
+    kicker: "经纪公司",
+    title: "签约艺人，提升每圈分成",
+    body: "",
+    reward: `当前经过起点 +${money(startIncome())} 金币`,
+    wide: true,
+    customHtml: `
+      <p class="manager-copy">签约和培养都只在这里进行。艺人等级越高，每次经过地图起点获得的通告分成越多。</p>
+      <div class="manager-grid">${cards}</div>
+    `,
+    actions: [{ label: "返回巡演地图", onClick: closeModal }],
+  });
+
+  document.querySelectorAll(".manager-card").forEach((button) => {
+    button.addEventListener("click", () => openArtistModal(Number(button.dataset.index)));
   });
 }
 
@@ -392,8 +406,8 @@ function openArtistModal(index) {
   const cost = upgradeCost(index);
   const title = isSigned ? `${artist.name} · ${levelNames[level]}` : `签约${artist.name}`;
   const body = isSigned
-    ? `${artist.trait}。当前每次路过可收 ${money(artistIncome(index))} 金币通告分成。培养后分成更高。`
-    : `${artist.trait}。先签约这位艺人，之后巡演路过TA的通告格就能自动收分成。`;
+    ? `${artist.trait}。当前每次经过地图起点可获得 ${money(artistIncome(index))} 金币通告分成。培养后分成更高。`
+    : `${artist.trait}。签约后会加入经纪公司，并在每次经过地图起点时自动结算通告分成。`;
   const actions = [];
 
   if (!isMax) {
@@ -518,15 +532,9 @@ async function rollDice() {
     await wait(220);
     state.position = (state.position + 1) % tileTypes.length;
     if (state.position === 0) {
-      const startBonus = Math.round(1200 * currentMap().scale);
+      const startBonus = startIncome();
       state.coins += startBonus;
       passIncome += startBonus;
-    }
-    const tile = tileTypes[state.position];
-    if (tile.type === "artist" && state.artists[tile.artistIndex] > 0) {
-      const income = artistIncome(tile.artistIndex);
-      state.coins += income;
-      passIncome += income;
     }
     render();
   }
@@ -539,7 +547,7 @@ async function rollDice() {
   if (passIncome > 0) {
     state.lastCoinReward = passIncome;
     animateCoinGain(passIncome, "button");
-    setFeed(`本次路过艺人通告/起点，自动收取 ${money(passIncome)} 金币。`);
+    setFeed(`经过巡演起点，经纪公司通告分成到账 ${money(passIncome)} 金币。`);
   }
   handleTile(state.position);
   render();
@@ -566,7 +574,7 @@ function handleTile(index) {
       showModal({
         kicker: "粉丝守护",
         title: "获得1个护盾",
-        body: "粉丝后援会已就位，可以抵挡一次小事故或好友破坏。",
+      body: "粉丝后援会已就位，可以抵挡一次小事故。",
         reward: `当前护盾 ${state.shields}`,
         actions: [{ label: "收下", onClick: closeModal }],
       });
@@ -581,21 +589,47 @@ function handleTile(index) {
     case "bank":
       openBankHeist();
       break;
-    case "raid":
-      openSabotagePage();
+    case "dice":
+      showDiceReward("骰子补给", "路演车刚好路过，补给了几颗骰子。", randomInt(2, 4));
       break;
-    case "task":
-      openDailyTaskModal();
-      break;
-    case "gallery":
-      openGalleryModal();
-      break;
-    case "artist":
-      openArtistModal(tile.artistIndex);
+    case "support":
+      handleSupport();
       break;
     default:
       break;
   }
+}
+
+function showDiceReward(title, body, amount) {
+  state.dice += amount;
+  setFeed(`${title}：骰子 +${amount}。`);
+  showModal({
+    kicker: "骰子到账",
+    title,
+    body,
+    reward: `+${amount} 骰子`,
+    actions: [{ label: "继续巡演", onClick: closeModal }],
+  });
+}
+
+function handleSupport() {
+  const dice = randomInt(1, 3);
+  const coins = Math.round(randomInt(1200, 2600) * currentMap().scale);
+  state.dice += dice;
+  gainCoins(coins, "modal");
+  state.lastCoinReward = coins;
+  bumpTask("support");
+  setFeed(`后援会应援到账：金币 +${money(coins)}，骰子 +${dice}。`);
+  showModal({
+    kicker: "后援会加码",
+    title: "应援站全员到位",
+    body: "粉丝把应援车开到了现场，通告补贴和骰子一起到账。",
+    reward: `+${money(coins)} 金币 +${dice} 骰子`,
+    actions: [
+      { label: "收下应援", onClick: closeModal },
+      { label: "看广告加倍应援", className: "ad-action", onClick: () => multiplyLastReward(1) },
+    ],
+  });
 }
 
 function showSimpleReward(title, body, rawAmount) {
@@ -652,7 +686,7 @@ function handleRisk() {
   showModal({
     kicker: "小事故",
     title: "耳返突然失灵",
-    body: "小概率付费事件。金额很低，主要给广告免损一个自然入口。",
+      body: "小概率付费事件。金额很低，也可以用护盾或广告免除。",
     reward: `-${money(amount)} 金币`,
     actions,
   });
@@ -766,7 +800,7 @@ function openBankHeist() {
     reward: "大额收入事件",
     wide: true,
     customHtml: `
-      <div class="heist-copy">模拟 Monopoly GO 的银行抢劫：翻开保险柜，最先凑齐3个相同图标就结算奖励。</div>
+      <div class="heist-copy">翻开保险柜，最先凑齐3个相同图标就结算奖励。金麦奖励最高，骰子也很香。</div>
       <div class="heist-board">
         ${symbols.map((symbol, index) => `<button class="heist-card" data-index="${index}" data-symbol="${symbol}">?</button>`).join("")}
       </div>
@@ -828,80 +862,6 @@ function finishHeist(symbol, info) {
   ]);
   setFeed(`金库抢麦成功，${rewardText}。`);
   render();
-}
-
-function openSabotagePage() {
-  const targetNames = ["泡泡音", "麦霸小周", "甜歌阿梨", "野生高音"];
-  const target = targetNames[randomInt(0, targetNames.length - 1)];
-  const landmarks = shuffle([
-    { name: "录音棚", level: randomInt(1, 5) },
-    { name: "礼物墙", level: randomInt(1, 5) },
-    { name: "热搜屏", level: randomInt(1, 5) },
-    { name: "主舞台", level: randomInt(1, 5) },
-  ]);
-  const shieldedIndex = randomInt(0, landmarks.length - 1);
-
-  showModal({
-    kicker: "踢馆破坏",
-    title: `好友「${target}」的工作室`,
-    body: "",
-    reward: "选择一个建筑破坏",
-    wide: true,
-    customHtml: `
-      <div class="sabotage-copy">模拟 Monopoly GO 的好友破坏：你可以自己选择破坏哪个建筑。若对方有护盾，会被挡住。</div>
-      <div class="sabotage-grid">
-        ${landmarks.map((item, index) => `
-          <button class="sabotage-card" data-index="${index}">
-            <span class="sabotage-icon"></span>
-            <b>${item.name}</b>
-            <small>Lv.${item.level}</small>
-          </button>
-        `).join("")}
-      </div>
-    `,
-    actions: [{ label: "放他一马", className: "plain-action", onClick: closeModal }],
-  });
-
-  document.querySelectorAll(".sabotage-card").forEach((card) => {
-    card.addEventListener("click", () => {
-      const index = Number(card.dataset.index);
-      const item = landmarks[index];
-      if (index === shieldedIndex) {
-        state.shields += 1;
-        bumpTask("raid");
-        card.classList.add("blocked");
-        showModal({
-          kicker: "破坏被挡",
-          title: "对方粉丝守护生效",
-          body: `${item.name} 被护盾挡住了。系统安慰你一个护盾，下次再来。`,
-          reward: "+1 护盾",
-          actions: [
-            { label: "收下", onClick: closeModal },
-            { label: "看广告换个好友", className: "ad-action", onClick: openSabotagePage },
-          ],
-        });
-        setFeed("踢馆被护盾挡住，但获得 +1 护盾安慰奖。");
-        return;
-      }
-
-      const reward = Math.round((randomInt(4500, 7800) + item.level * 1800) * currentMap().scale);
-      gainCoins(reward, "modal");
-      state.lastCoinReward = reward;
-      bumpTask("raid");
-      showModal({
-        kicker: "破坏成功",
-        title: `${item.name} 被你踢馆了`,
-        body: "对方工作室掉了一截热度，你抢到一大笔通告金币。",
-        reward: `+${money(reward)} 金币`,
-        actions: [
-          { label: "收下金币", onClick: closeModal },
-          { label: "看广告再踢一次", className: "ad-action", onClick: openSabotagePage },
-        ],
-      });
-      setFeed(`踢馆破坏成功，获得 ${money(reward)} 金币。`);
-      render();
-    });
-  });
 }
 
 function openDailyTaskModal() {
@@ -1050,6 +1010,7 @@ els.rollBtn.addEventListener("click", rollDice);
 els.adDiceBtn.addEventListener("click", grantAdDice);
 els.adCoinBtn.addEventListener("click", grantAdCoins);
 els.collectOfflineBtn.addEventListener("click", collectOfflineIncome);
+els.managerBtn.addEventListener("click", openManagerModal);
 els.dailyTaskBtn.addEventListener("click", openDailyTaskModal);
 els.galleryBtn.addEventListener("click", openGalleryModal);
 els.modalClose.addEventListener("click", closeModal);
@@ -1059,4 +1020,4 @@ els.modalBackdrop.addEventListener("click", (event) => {
 
 renderBoard();
 render();
-setFeed("建议先签约地图上的艺人，再培养到顶流。每日任务和艺人图鉴都能领骰子。");
+setFeed("先去经纪公司签约艺人。投骰子走格子，经过起点可结算通告分成。");

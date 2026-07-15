@@ -390,7 +390,7 @@ h1 {
   position: relative;
   z-index: 2;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
   gap: 8px;
   padding: 0 14px 8px;
 }
@@ -406,7 +406,7 @@ h1 {
   box-shadow: 0 5px 0 rgba(151, 66, 42, 0.14);
   font-size: 12px;
   font-weight: 1000;
-  text-align: left;
+  text-align: center;
 }
 
 .shortcut-btn b {
@@ -512,17 +512,12 @@ h1 {
   background: #45ba75;
 }
 
-.tile.artist .tile-icon,
-.tile.building .tile-icon {
-  background: linear-gradient(135deg, #ff6d6a, #ffcb40);
+.tile.dice .tile-icon {
+  background: linear-gradient(135deg, #4fc7df, #2f7ed1);
 }
 
-.tile.task .tile-icon {
-  background: linear-gradient(135deg, #4ec57a, #ffe05e);
-}
-
-.tile.gallery .tile-icon {
-  background: linear-gradient(135deg, #8b6be8, #ff8fa1);
+.tile.support .tile-icon {
+  background: linear-gradient(135deg, #8e70ef, #ff8cab);
 }
 
 .tile.gift .tile-icon {
@@ -1224,6 +1219,71 @@ h1 {
   border: 3px solid rgba(255, 255, 255, 0.72);
   font-size: 18px;
   font-weight: 1000;
+}
+
+.manager-copy {
+  margin: 0 auto 12px;
+  color: #8a5648;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.manager-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.manager-card {
+  min-height: 134px;
+  padding: 10px 8px;
+  border: 0;
+  cursor: pointer;
+  border-radius: 16px;
+  display: grid;
+  place-items: center;
+  gap: 3px;
+  color: #6b372f;
+  background: rgba(255, 255, 255, 0.58);
+  box-shadow: 0 5px 0 rgba(144, 66, 41, 0.15);
+}
+
+.manager-card.max {
+  background: linear-gradient(180deg, #fff5c9, #ffd980);
+}
+
+.manager-portrait {
+  width: 44px;
+  height: 44px;
+  display: grid;
+  place-items: center;
+  border-radius: 50%;
+  color: #fff;
+  background: linear-gradient(145deg, #ef514e, #ffbd31);
+  border: 3px solid rgba(255, 255, 255, 0.78);
+  box-shadow: 0 3px 0 rgba(132, 54, 40, 0.16);
+  font-size: 18px;
+  font-weight: 1000;
+}
+
+.manager-card b {
+  font-size: 14px;
+}
+
+.manager-card small {
+  color: #9b5d4d;
+  font-size: 11px;
+}
+
+.manager-card em {
+  min-height: 21px;
+  padding: 4px 6px;
+  border-radius: 999px;
+  color: #c13b34;
+  background: #fff5d7;
+  font-size: 10px;
+  font-style: normal;
+  font-weight: 900;
 }
 
 @media (max-height: 820px) {
